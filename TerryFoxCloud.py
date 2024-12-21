@@ -12,18 +12,17 @@ logging.basicConfig(
 
 # Configuration
 NOTION_API_KEY = config.NOTION_API_KEY
-DATABASE_ID = config.DATABASE_ID
-PAGE_ID = config.PAGE_ID
 GITHUB_PAGES_URL = config.GITHUB_PAGES_URL
+PAGES = config.PAGES
 
 # Initialize Notion client
 notion = Client(auth=NOTION_API_KEY)
 
-def get_monthly_progress():
+def get_monthly_progress(database_id):
     """Retrieve the progress percentage from the Notion database."""
     try:
         logging.debug("Fetching database items from Notion API.")
-        response = notion.databases.query(database_id=DATABASE_ID)
+        response = notion.databases.query(database_id=database_id)
         logging.info("Successfully fetched database items.")
 
         for result in response["results"]:
@@ -39,13 +38,6 @@ def get_monthly_progress():
         logging.error(f"An error occurred while fetching progress: {e}")
         return None
 
-# Example usage of the function
-progress = get_monthly_progress()
-if progress is not None:
-    logging.info(f"Progress {progress}% falls into section {int(progress // 10)}.")
-else:
-    logging.error("Progress could not be retrieved. Exiting script.")
-
 def determine_image(progress):
     """Determine the GitHub Pages URL to use based on progress."""
     section = int(progress // 16.7)  # Determine which section the progress falls into
@@ -54,12 +46,12 @@ def determine_image(progress):
 
     # Map progress to image file names (replace these with actual file names in your GitHub Pages)
     file_names = [
-        "image1.jpg",  # Replace with actual file names
-        "image2.jpg",
-        "image3.jpg",
-        "image4.jpg",
-        "image5.jpg",
-        "image6.jpg",
+        "1 - Lots of Money.png",
+        "2 - Some Spending Money.png",
+        "3 - Neutral.png",
+        "4 - Anxious.png",
+        "5 - Over budget Sad.png",
+        "6 - Max Overbudget Dead.png",
     ]
     return f"{GITHUB_PAGES_URL}{file_names[section]}"
 
@@ -76,11 +68,11 @@ def find_image_block(blocks):
                 return image_block_id
     return None
 
-def update_image_block(image_url):
+def update_image_block(page_id, image_url):
     """Update the image block in the page with the new image."""
     try:
         logging.debug("Fetching page content to find the image block.")
-        blocks = notion.blocks.children.list(PAGE_ID)["results"]
+        blocks = notion.blocks.children.list(page_id)["results"]
         logging.info(f"Fetched {len(blocks)} blocks from the page.")
 
         image_block_id = find_image_block(blocks)
@@ -97,24 +89,33 @@ def update_image_block(image_url):
     except Exception as e:
         logging.error(f"Error while updating image block: {e}")
 
-def main():
-    logging.info("Script started.")
+def process_page(page):
+    page_id = page["page_id"]
+    database_id = page["database_id"]
+
+    logging.info(f"Processing page {page_id}")
 
     # Step 1: Get progress percentage
-    progress = get_monthly_progress()
+    progress = get_monthly_progress(database_id)
     if progress is None:
-        logging.error("Progress could not be retrieved. Exiting script.")
+        logging.error("Progress could not be retrieved. Skipping page.")
         return
 
     # Step 2: Determine the image URL based on progress
     image_url = determine_image(progress)
 
     if not image_url:
-        logging.error("Image URL could not be determined. Exiting script.")
+        logging.error("Image URL could not be determined. Skipping page.")
         return
 
     # Step 3: Update the image block
-    update_image_block(image_url)
+    update_image_block(page_id, image_url)
+
+def main():
+    logging.info("Script started.")
+
+    for page in PAGES:
+        process_page(page)
 
     logging.info("Script finished successfully.")
 
