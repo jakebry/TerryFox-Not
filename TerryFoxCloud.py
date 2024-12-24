@@ -2,11 +2,14 @@ import os
 import logging
 from notion_client import Client
 import config  # Import the configuration file
+import time
+import itertools
+import threading
 
 # Setup logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+    format="%(asctime)s - %(message)s",
     handlers=[logging.FileHandler("notion_script.log"), logging.StreamHandler()]
 )
 
@@ -18,13 +21,22 @@ PAGES = config.PAGES
 # Initialize Notion client
 notion = Client(auth=NOTION_API_KEY)
 
+def loading_animation(message):
+    """Display a loading animation with a message."""
+    for c in itertools.cycle(['|', '/', '-', '\\']):
+        if loading_animation.done:
+            break
+        print(f'\r{message} {c}', end='', flush=True)
+        time.sleep(0.1)
+    print('\r', end='', flush=True)
+
+loading_animation.done = False
+
 def get_monthly_progress(database_id):
     """Retrieve the progress percentage from the Notion database."""
     try:
-        logging.debug("Fetching database items from Notion API.")
+        logging.info("Checking balances...")
         response = notion.databases.query(database_id=database_id)
-        logging.info("Successfully fetched database items.")
-
         for result in response["results"]:
             progress = result["properties"].get("Progress", {}).get("formula", {}).get("number")
             if progress is not None:
@@ -71,14 +83,11 @@ def find_image_block(blocks):
 def update_image_block(page_id, image_url):
     """Update the image block in the page with the new image."""
     try:
-        logging.debug("Fetching page content to find the image block.")
+        logging.info("Updating image...")
         blocks = notion.blocks.children.list(page_id)["results"]
-        logging.info(f"Fetched {len(blocks)} blocks from the page.")
-
         image_block_id = find_image_block(blocks)
 
         if image_block_id:
-            logging.info("Found image block. Updating the image.")
             notion.blocks.update(
                 block_id=image_block_id,
                 image={"external": {"url": image_url}}  # Correct payload format
@@ -113,10 +122,14 @@ def process_page(page):
 
 def main():
     logging.info("Script started.")
+    loading_thread = threading.Thread(target=loading_animation, args=("Processing",))
+    loading_thread.start()
 
     for page in PAGES:
         process_page(page)
 
+    loading_animation.done = True
+    loading_thread.join()
     logging.info("Script finished successfully.")
 
 if __name__ == "__main__":
