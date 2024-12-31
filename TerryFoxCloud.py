@@ -7,8 +7,8 @@ import threading
 
 # Setup logging
 logging.basicConfig(
-    level=logging.WARNING,  # Change logging level to WARNING
-    format="%(asctime)s - %(message)s",
+    level=logging.INFO,  # Change logging level to INFO
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.FileHandler("notion_script.log"), logging.StreamHandler()]
 )
 
@@ -28,16 +28,16 @@ loading_animation.done = False
 
 def get_monthly_progress(notion, database_id):
     """Retrieve the progress percentage from the Notion database."""
-    try:
-        response = notion.databases.query(database_id=database_id)
-        for result in response["results"]:
-            progress = result["properties"].get("Progress", {}).get("formula", {}).get("number")
-            if progress is not None:
-                progress *= 100  # Adjust the progress value
-                return progress
-    except Exception as e:
-        logging.error(f"An error occurred while fetching progress: {e}")
-        return None
+    logging.debug(f"Querying database {database_id}")
+    response = notion.databases.query(database_id=database_id)
+    for result in response["results"]:
+        progress = result["properties"].get("Progress", {}).get("formula", {}).get("number")
+        if progress is not None:
+            progress *= 100  # Adjust the progress value
+            logging.debug(f"Progress found: {progress}%")
+            return progress
+    logging.debug("No progress found")
+    return None
 
 def determine_image(progress):
     """Determine the GitHub Pages URL to use based on progress."""
@@ -53,7 +53,9 @@ def determine_image(progress):
         "5 - Over budget Sad.png",
         "6 - Max Overbudget Dead.png",
     ]
-    return f"{config.GITHUB_PAGES_URL}{file_names[section]}"
+    image_url = f"{config.GITHUB_PAGES_URL}{file_names[section]}"
+    logging.debug(f"Determined image URL: {image_url}")
+    return image_url
 
 def find_image_block(notion, blocks):
     """Recursively search for an image block within given blocks."""
@@ -75,42 +77,50 @@ def find_image_block(notion, blocks):
 
 def update_image_block(notion, page_id, image_url):
     """Update the image block in the Notion page."""
-    try:
-        # Fetch the children blocks of the page
-        response = notion.blocks.children.list(block_id=page_id)
-        blocks = response['results']
+    logging.debug(f"Updating image block for page {page_id} with URL {image_url}")
+    # Fetch the children blocks of the page
+    response = notion.blocks.children.list(block_id=page_id)
+    blocks = response['results']
 
-        # Find the image block
-        image_block_id = find_image_block(notion, blocks)
-        if image_block_id:
+    # Find the image block
+    image_block_id = find_image_block(notion, blocks)
+    if image_block_id:
+        try:
             # Update the image block with the new image URL
             notion.blocks.update(
                 block_id=image_block_id,
                 image={"external": {"url": image_url}}
             )
-        else:
-            logging.warning("No image block found.")
-    except Exception as e:
-        logging.error(f"An error occurred while updating the image block: {e}")
+            logging.info(f"Image block {image_block_id} updated successfully for page {page_id}")
+        except Exception as e:
+            logging.error(f"Failed to update image block {image_block_id} for page {page_id}: {e}")
+    else:
+        logging.warning(f"No image block found for page {page_id}")
 
 def process_page(page):
     """Process a single Notion page."""
+    logging.debug(f"Processing page: {page['page_id']}")
     notion = notion_clients[page["account_key"]]
     progress = get_monthly_progress(notion, page["database_id"])
     if progress is not None:
         image_url = determine_image(progress)
         update_image_block(notion, page["page_id"], image_url)
+    else:
+        logging.warning(f"No progress found for page: {page['page_id']}")
 
 def main():
     """Main function to process all pages."""
+    logging.debug("Starting main function")
     threads = []
     for page in config.PAGES:
+        logging.debug(f"Starting thread for page: {page['page_id']}")
         thread = threading.Thread(target=process_page, args=(page,))
         threads.append(thread)
         thread.start()
 
     for thread in threads:
         thread.join()
+    logging.debug("All threads completed")
 
 if __name__ == "__main__":
     main()
