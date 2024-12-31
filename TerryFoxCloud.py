@@ -81,21 +81,20 @@ def update_image_block(notion, page_id, image_url):
 
         # Find the image block
         image_block_id = find_image_block(blocks)
-        if not image_block_id:
-            logging.error("No image block found.")
-            return
-
-        # Update the image block with the new image URL
-        notion.blocks.update(
-            block_id=image_block_id,
-            image={"type": "external", "external": {"url": image_url}}
-        )
-        logging.info(f"Updated image block with URL: {image_url}")
+        if image_block_id:
+            # Update the image block with the new image URL
+            notion.blocks.update(
+                block_id=image_block_id,
+                image={"type": "external", "external": {"url": image_url}}
+            )
+            logging.info(f"Updated image block with URL: {image_url}")
+        else:
+            logging.info("No image block found.")
     except Exception as e:
-        logging.error(f"An error occurred while updating image block: {e}")
+        logging.error(f"An error occurred while updating the image block: {e}")
 
 def process_page(page):
-    """Process a single page to update its image based on progress."""
+    """Process a single Notion page."""
     notion = notion_clients[page["account_key"]]
     progress = get_monthly_progress(notion, page["database_id"])
     if progress is not None:
@@ -104,15 +103,14 @@ def process_page(page):
 
 def main():
     """Main function to process all pages."""
-    loading_thread = threading.Thread(target=loading_animation, args=("Processing pages",))
-    loading_thread.start()
+    threads = []
+    for page in config.PAGES:
+        thread = threading.Thread(target=process_page, args=(page,))
+        threads.append(thread)
+        thread.start()
 
-    try:
-        for page in config.PAGES:
-            process_page(page)
-    finally:
-        loading_animation.done = True
-        loading_thread.join()
+    for thread in threads:
+        thread.join()
 
 if __name__ == "__main__":
     main()
