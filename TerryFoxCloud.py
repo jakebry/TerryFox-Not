@@ -7,7 +7,7 @@ import threading
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,  # Change logging level to WARNING
     format="%(asctime)s - %(message)s",
     handlers=[logging.FileHandler("notion_script.log"), logging.StreamHandler()]
 )
@@ -29,17 +29,12 @@ loading_animation.done = False
 def get_monthly_progress(notion, database_id):
     """Retrieve the progress percentage from the Notion database."""
     try:
-        logging.info("Checking balances...")
         response = notion.databases.query(database_id=database_id)
         for result in response["results"]:
             progress = result["properties"].get("Progress", {}).get("formula", {}).get("number")
             if progress is not None:
                 progress *= 100  # Adjust the progress value
-                logging.info(f"Found progress percentage: {progress}%.")
                 return progress
-            else:
-                logging.error("Progress value is None.")
-                return None
     except Exception as e:
         logging.error(f"An error occurred while fetching progress: {e}")
         return None
@@ -48,7 +43,6 @@ def determine_image(progress):
     """Determine the GitHub Pages URL to use based on progress."""
     section = int(progress // 16.7)  # Determine which section the progress falls into
     section = min(section, 5)  # Ensure it does not exceed the maximum index (5)
-    logging.info(f"Progress {progress}% falls into section {section}.")
 
     # Map progress to image file names (replace these with actual file names in your GitHub Pages)
     file_names = [
@@ -61,13 +55,20 @@ def determine_image(progress):
     ]
     return f"{config.GITHUB_PAGES_URL}{file_names[section]}"
 
-def find_image_block(blocks):
+def find_image_block(notion, blocks):
     """Recursively search for an image block within given blocks."""
     for block in blocks:
         if block['type'] == 'image':
             return block['id']
         if 'children' in block:
-            image_block_id = find_image_block(block['children'])
+            image_block_id = find_image_block(notion, block['children'])
+            if image_block_id:
+                return image_block_id
+        # Fetch children blocks if not already present
+        if block.get('has_children'):
+            response = notion.blocks.children.list(block_id=block['id'])
+            children_blocks = response['results']
+            image_block_id = find_image_block(notion, children_blocks)
             if image_block_id:
                 return image_block_id
     return None
@@ -80,16 +81,15 @@ def update_image_block(notion, page_id, image_url):
         blocks = response['results']
 
         # Find the image block
-        image_block_id = find_image_block(blocks)
+        image_block_id = find_image_block(notion, blocks)
         if image_block_id:
             # Update the image block with the new image URL
             notion.blocks.update(
                 block_id=image_block_id,
-                image={"type": "external", "external": {"url": image_url}}
+                image={"external": {"url": image_url}}
             )
-            logging.info(f"Updated image block with URL: {image_url}")
         else:
-            logging.info("No image block found.")
+            logging.warning("No image block found.")
     except Exception as e:
         logging.error(f"An error occurred while updating the image block: {e}")
 
