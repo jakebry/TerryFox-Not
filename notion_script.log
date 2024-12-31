@@ -1,0 +1,39 @@
+2024-12-31 07:08:52,045 - Script started.
+2024-12-31 07:08:52,046 - Processing page 11812cc6-32d5-8011-9400-de929e5b2b58
+2024-12-31 07:08:52,046 - Checking balances...
+2024-12-31 07:08:52,886 - HTTP Request: POST https://api.notion.com/v1/databases/12012cc632d5805a9e34f04f7de8baa7/query "HTTP/1.1 200 OK"
+2024-12-31 07:08:52,887 - Found progress percentage: 19.2%.
+2024-12-31 07:08:52,888 - Progress 19.2% falls into section 1.
+2024-12-31 07:08:52,888 - Updating image...
+2024-12-31 07:08:53,083 - HTTP Request: GET https://api.notion.com/v1/blocks/11812cc6-32d5-8011-9400-de929e5b2b58/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:53,084 - Checking Block ID: 16812cc6-32d5-80d1-ad36-dea32c941902, Type: column_list
+2024-12-31 07:08:53,239 - HTTP Request: GET https://api.notion.com/v1/blocks/16812cc6-32d5-80d1-ad36-dea32c941902/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:53,240 - Checking Block ID: ac89586e-6e80-4247-a1c2-01359095a85f, Type: column
+2024-12-31 07:08:53,429 - HTTP Request: GET https://api.notion.com/v1/blocks/ac89586e-6e80-4247-a1c2-01359095a85f/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:53,431 - Checking Block ID: 16612cc6-32d5-8084-a6fa-e9fb3eedb138, Type: unsupported
+2024-12-31 07:08:53,431 - Checking Block ID: 2dc64e44-86a4-46b5-b115-b1ae8df4f08a, Type: paragraph
+2024-12-31 07:08:53,431 - Checking Block ID: 33821c43-ce76-45e2-8c43-e7bf3e3966ed, Type: column
+2024-12-31 07:08:53,787 - HTTP Request: GET https://api.notion.com/v1/blocks/33821c43-ce76-45e2-8c43-e7bf3e3966ed/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:53,789 - Checking Block ID: 16612cc6-32d5-8026-bf6e-cc3efcef9ed7, Type: unsupported
+2024-12-31 07:08:53,789 - Checking Block ID: 18dfdbaa-946f-4435-8c6f-4fc6408405d1, Type: paragraph
+2024-12-31 07:08:53,789 - Checking Block ID: 11812cc6-32d5-8157-b8c4-f71f01ee1aa8, Type: column_list
+2024-12-31 07:08:53,945 - HTTP Request: GET https://api.notion.com/v1/blocks/11812cc6-32d5-8157-b8c4-f71f01ee1aa8/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:53,946 - Checking Block ID: 16012cc6-32d5-8067-b89d-d72be0916d05, Type: column
+2024-12-31 07:08:54,092 - HTTP Request: GET https://api.notion.com/v1/blocks/16012cc6-32d5-8067-b89d-d72be0916d05/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:54,094 - Checking Block ID: 16012cc6-32d5-808a-a454-f77609bf3c79, Type: child_database
+2024-12-31 07:08:54,094 - Checking Block ID: 16812cc6-32d5-8044-ae85-c457b909c68b, Type: paragraph
+2024-12-31 07:08:54,094 - Checking Block ID: 16012cc6-32d5-800b-8daa-f09fe92abaff, Type: column
+2024-12-31 07:08:54,208 - HTTP Request: GET https://api.notion.com/v1/blocks/16012cc6-32d5-800b-8daa-f09fe92abaff/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:54,209 - Checking Block ID: 16012cc6-32d5-80be-b9f5-c592e55f9477, Type: child_database
+2024-12-31 07:08:54,210 - Checking Block ID: 16312cc6-32d5-802f-a04e-fff44381b4de, Type: paragraph
+2024-12-31 07:08:54,210 - Checking Block ID: 14b12cc6-32d5-8016-89d4-e786caa1ab6d, Type: column
+2024-12-31 07:08:54,531 - HTTP Request: GET https://api.notion.com/v1/blocks/14b12cc6-32d5-8016-89d4-e786caa1ab6d/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:54,532 - Checking Block ID: 12012cc6-32d5-805a-9e34-f04f7de8baa7, Type: child_database
+2024-12-31 07:08:54,532 - Checking Block ID: 15112cc6-32d5-8060-a457-d298f9ed52e1, Type: paragraph
+2024-12-31 07:08:54,533 - Checking Block ID: 11812cc6-32d5-81fb-8ad5-db6566a95f0c, Type: column
+2024-12-31 07:08:54,681 - HTTP Request: GET https://api.notion.com/v1/blocks/11812cc6-32d5-81fb-8ad5-db6566a95f0c/children "HTTP/1.1 200 OK"
+2024-12-31 07:08:54,682 - Checking Block ID: 16112cc6-32d5-8092-b7da-e12c95198dbd, Type: heading_1
+2024-12-31 07:08:54,682 - Checking Block ID: 16312cc6-32d5-80bd-9c92-da87c19674a5, Type: image
+2024-12-31 07:08:55,042 - HTTP Request: PATCH https://api.notion.com/v1/blocks/16312cc6-32d5-80bd-9c92-da87c19674a5 "HTTP/1.1 200 OK"
+2024-12-31 07:08:55,043 - Successfully updated image block with URL: https://yourusername.github.io/yourrepository/images/2 - Some Spending Money.png
+2024-12-31 07:08:55,133 - Script finished successfully.

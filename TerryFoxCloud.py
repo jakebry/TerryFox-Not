@@ -1,4 +1,3 @@
-import os
 import logging
 from notion_client import Client
 import config  # Import the configuration file
@@ -13,13 +12,8 @@ logging.basicConfig(
     handlers=[logging.FileHandler("notion_script.log"), logging.StreamHandler()]
 )
 
-# Configuration
-NOTION_API_KEY = config.NOTION_API_KEY
-GITHUB_PAGES_URL = config.GITHUB_PAGES_URL
-PAGES = config.PAGES
-
-# Initialize Notion client
-notion = Client(auth=NOTION_API_KEY)
+# Initialize Notion clients for multiple accounts
+notion_clients = {key: Client(auth=api_key) for key, api_key in config.NOTION_API_KEYS.items()}
 
 def loading_animation(message):
     """Display a loading animation with a message."""
@@ -32,7 +26,7 @@ def loading_animation(message):
 
 loading_animation.done = False
 
-def get_monthly_progress(database_id):
+def get_monthly_progress(notion, database_id):
     """Retrieve the progress percentage from the Notion database."""
     try:
         logging.info("Checking balances...")
@@ -65,9 +59,9 @@ def determine_image(progress):
         "5 - Over budget Sad.png",
         "6 - Max Overbudget Dead.png",
     ]
-    return f"{GITHUB_PAGES_URL}{file_names[section]}"
+    return f"{config.GITHUB_PAGES_URL}{file_names[section]}"
 
-def find_image_block(blocks):
+def find_image_block(notion, blocks):
     """Recursively search for an image block within given blocks."""
     for block in blocks:
         logging.info(f"Checking Block ID: {block['id']}, Type: {block['type']}")
@@ -75,62 +69,43 @@ def find_image_block(blocks):
             return block["id"]
         elif "has_children" in block and block["has_children"]:
             child_blocks = notion.blocks.children.list(block["id"])["results"]
-            image_block_id = find_image_block(child_blocks)
+            image_block_id = find_image_block(notion, child_blocks)
             if image_block_id:
                 return image_block_id
     return None
 
-def update_image_block(page_id, image_url):
-    """Update the image block in the page with the new image."""
+def update_image_block(notion, page_id, image_url):
+    """Update the image block in the Notion page."""
     try:
-        logging.info("Updating image...")
-        blocks = notion.blocks.children.list(page_id)["results"]
-        image_block_id = find_image_block(blocks)
-
-        if image_block_id:
-            notion.blocks.update(
-                block_id=image_block_id,
-                image={"external": {"url": image_url}}  # Correct payload format
-            )
-            logging.info(f"Successfully updated image block with URL: {image_url}")
+        blocks = notion.blocks.children.list(block_id=page_id)["results"]
+        image_block = find_image_block(notion, blocks)
+        if image_block:
+            notion.blocks.update(block_id=image_block["id"], image={"type": "external", "external": {"url": image_url}})
+            logging.info(f"Updated image block in page {page_id} with URL {image_url}.")
         else:
-            logging.warning("No image block found on the page.")
+            logging.error(f"No image block found in page {page_id}.")
     except Exception as e:
-        logging.error(f"Error while updating image block: {e}")
+        logging.error(f"An error occurred while updating image block: {e}")
 
 def process_page(page):
-    page_id = page["page_id"]
-    database_id = page["database_id"]
-
-    logging.info(f"Processing page {page_id}")
-
-    # Step 1: Get progress percentage
-    progress = get_monthly_progress(database_id)
-    if progress is None:
-        logging.error("Progress could not be retrieved. Skipping page.")
-        return
-
-    # Step 2: Determine the image URL based on progress
-    image_url = determine_image(progress)
-
-    if not image_url:
-        logging.error("Image URL could not be determined. Skipping page.")
-        return
-
-    # Step 3: Update the image block
-    update_image_block(page_id, image_url)
+    """Process a single page to update its image based on progress."""
+    notion = notion_clients[page["account_key"]]
+    progress = get_monthly_progress(notion, page["database_id"])
+    if progress is not None:
+        image_url = determine_image(progress)
+        update_image_block(notion, page["page_id"], image_url)
 
 def main():
-    logging.info("Script started.")
-    loading_thread = threading.Thread(target=loading_animation, args=("Processing",))
+    """Main function to process all pages."""
+    loading_thread = threading.Thread(target=loading_animation, args=("Processing pages",))
     loading_thread.start()
 
-    for page in PAGES:
-        process_page(page)
-
-    loading_animation.done = True
-    loading_thread.join()
-    logging.info("Script finished successfully.")
+    try:
+        for page in config.PAGES:
+            process_page(page)
+    finally:
+        loading_animation.done = True
+        loading_thread.join()
 
 if __name__ == "__main__":
     main()
