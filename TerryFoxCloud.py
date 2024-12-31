@@ -61,15 +61,13 @@ def determine_image(progress):
     ]
     return f"{config.GITHUB_PAGES_URL}{file_names[section]}"
 
-def find_image_block(notion, blocks):
+def find_image_block(blocks):
     """Recursively search for an image block within given blocks."""
     for block in blocks:
-        logging.info(f"Checking Block ID: {block['id']}, Type: {block['type']}")
-        if block["type"] == "image":
-            return block["id"]
-        elif "has_children" in block and block["has_children"]:
-            child_blocks = notion.blocks.children.list(block["id"])["results"]
-            image_block_id = find_image_block(notion, child_blocks)
+        if block['type'] == 'image':
+            return block['id']
+        if 'children' in block:
+            image_block_id = find_image_block(block['children'])
             if image_block_id:
                 return image_block_id
     return None
@@ -77,13 +75,22 @@ def find_image_block(notion, blocks):
 def update_image_block(notion, page_id, image_url):
     """Update the image block in the Notion page."""
     try:
-        blocks = notion.blocks.children.list(block_id=page_id)["results"]
-        image_block = find_image_block(notion, blocks)
-        if image_block:
-            notion.blocks.update(block_id=image_block["id"], image={"type": "external", "external": {"url": image_url}})
-            logging.info(f"Updated image block in page {page_id} with URL {image_url}.")
-        else:
-            logging.error(f"No image block found in page {page_id}.")
+        # Fetch the children blocks of the page
+        response = notion.blocks.children.list(block_id=page_id)
+        blocks = response['results']
+
+        # Find the image block
+        image_block_id = find_image_block(blocks)
+        if not image_block_id:
+            logging.error("No image block found.")
+            return
+
+        # Update the image block with the new image URL
+        notion.blocks.update(
+            block_id=image_block_id,
+            image={"type": "external", "external": {"url": image_url}}
+        )
+        logging.info(f"Updated image block with URL: {image_url}")
     except Exception as e:
         logging.error(f"An error occurred while updating image block: {e}")
 
